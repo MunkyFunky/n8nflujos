@@ -1,0 +1,169 @@
+[
+  {
+    "name": "Atención cálida por WhatsApp con GPT y Excel",
+    "nodes": [
+      {
+        "parameters": {
+          "path": "gpt-respuesta-rafa",
+          "httpMethod": "POST",
+          "options": {}
+        },
+        "id": 1,
+        "name": "Webhook WhatsApp",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [
+          100,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "functionCode": "const meses = [\n  \"Enero\", \"Febrero\", \"Marzo\", \"Abril\", \"Mayo\", \"Junio\",\n  \"Julio\", \"Agosto\", \"Septiembre\", \"Octubre\", \"Noviembre\", \"Diciembre\"\n];\nconst hoy = new Date();\nconst mes = meses[hoy.getMonth()];\nconst año = hoy.getFullYear();\nconst nombreArchivo = `Comprobantes-${mes}-${año}-EJEMPLO.xlsx`;\nconst ruta = `/root/comprobantes/${nombreArchivo}`;\nreturn [{ json: { ruta } }];\n"
+        },
+        "id": 2,
+        "name": "Generar Ruta Excel",
+        "type": "n8n-nodes-base.function",
+        "typeVersion": 1,
+        "position": [
+          300,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "filePath": "={{ $json[\"ruta\"] }}"
+        },
+        "id": 3,
+        "name": "Leer Archivo Excel",
+        "type": "n8n-nodes-base.readBinaryFile",
+        "typeVersion": 1,
+        "position": [
+          500,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "options": {
+            "headerRow": true
+          }
+        },
+        "id": 4,
+        "name": "Leer Excel como JSON",
+        "type": "n8n-nodes-base.spreadsheetFile",
+        "typeVersion": 1,
+        "position": [
+          700,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "functionCode": "const input = $json.body.message || $json.body.text || '';\nreturn [{ json: { mensaje: input } }]"
+        },
+        "id": 5,
+        "name": "Extraer Mensaje",
+        "type": "n8n-nodes-base.function",
+        "typeVersion": 1,
+        "position": [
+          300,
+          500
+        ]
+      },
+      {
+        "parameters": {
+          "model": "gpt-4",
+          "prompt": "Eres Rafa, un agente humano que responde con calidez y claridad.\n\nSi el mensaje pide un comprobante y el CUIT existe en la base, responde:\n\"🧾 ¡Hola {{Nombre}}! Encontré tu comprobante. Te lo envío adjunto enseguida. Si necesitás otra cosa, acá estoy. 😊 —Rafa\"\n\nSi no lo encuentra:\n\"😕 ¡Hola! No pude encontrar tu comprobante en el sistema. ¿Podés verificar el CUIT o el nombre? Estoy acá para ayudarte. —Rafa\"\n\nUsa emojis sutiles, tono amable, directo y breve.",
+          "temperature": 0.8,
+          "maxTokens": 500
+        },
+        "id": 6,
+        "name": "Responder con Rafa (GPT)",
+        "type": "n8n-nodes-base.openAi",
+        "typeVersion": 1,
+        "position": [
+          500,
+          500
+        ],
+        "credentials": {
+          "openAiApi": {
+            "id": "OPENAI_API_KEY_ID",
+            "name": "OpenAI cuenta"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "path": "prueba-ok",
+          "httpMethod": "GET",
+          "options": {}
+        },
+        "id": 999,
+        "name": "Webhook Dummy",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [
+          100,
+          100
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook WhatsApp": {
+        "main": [
+          [
+            {
+              "node": "Generar Ruta Excel",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Extraer Mensaje",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Generar Ruta Excel": {
+        "main": [
+          [
+            {
+              "node": "Leer Archivo Excel",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Leer Archivo Excel": {
+        "main": [
+          [
+            {
+              "node": "Leer Excel como JSON",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Extraer Mensaje": {
+        "main": [
+          [
+            {
+              "node": "Responder con Rafa (GPT)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "active": false,
+    "settings": {},
+    "tags": []
+  }
+]
